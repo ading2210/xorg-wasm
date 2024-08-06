@@ -18,6 +18,14 @@ LIBXAU_PATH="$DEPS_PATH/libxau"
 LIBXKB_PATH="$DEPS_PATH/libxkb"
 LIBXTRANS_PATH="$DEPS_PATH/libxtrans"
 LIBX11_PATH="$DEPS_PATH/libx11"
+LIBXSHMFENCE_PATH="$DEPS_PATH/libxshmfence"
+PIXMAN_PATH="$DEPS_PATH/pixman"
+LIBXKBFILE_PATH="$DEPS_PATH/libxkbfile"
+FREETYPE_PATH="$DEPS_PATH/freetype"
+ZLIB_PATH="$DEPS_PATH/zlib"
+LIBFONTENC_PATH="$DEPS_PATH/libfontenc"
+LIBXFONT_PATH="$DEPS_PATH/libxfont"
+LIBXCVT_PATH="$DEPS_PATH/libxcvt"
 
 #export global build options
 export EM_PKG_CONFIG_PATH="$PREFIX_PATH/share/pkgconfig:$PREFIX_PATH/lib/pkgconfig"
@@ -47,7 +55,7 @@ download_xkbproto() {
 build_libxkb() {
   clone_repo "$LIBXKB_PATH" "https://gitlab.freedesktop.org/xorg/lib/libxcb"
   autoreconf -fi
-  emconfigure ./configure --host=i686-linux --prefix="$PREFIX_PATH"
+  emconfigure ./configure --host=i686-linux --prefix="$PREFIX_PATH" --disable-shared
   emmake make -j$CORE_COUNT
   emmake make install
 }
@@ -55,7 +63,7 @@ build_libxkb() {
 build_libxau() {
   clone_repo "$LIBXAU_PATH" "https://gitlab.freedesktop.org/xorg/lib/libxau"
   autoreconf -fi
-  emconfigure ./configure --host=i686-linux --prefix="$PREFIX_PATH"
+  emconfigure ./configure --host=i686-linux --prefix="$PREFIX_PATH" --disable-shared
   emmake make -j$CORE_COUNT
   emmake make install
 }
@@ -63,7 +71,7 @@ build_libxau() {
 build_libxtrans() {
   clone_repo "$LIBXTRANS_PATH" "https://gitlab.freedesktop.org/xorg/lib/libxtrans"
   autoreconf -fi
-  emconfigure ./configure --host=i686-linux --prefix="$PREFIX_PATH"
+  emconfigure ./configure --host=i686-linux --prefix="$PREFIX_PATH" --disable-shared
   emmake make -j$CORE_COUNT
   emmake make install
 }
@@ -71,7 +79,7 @@ build_libxtrans() {
 build_libx11() {
   clone_repo "$LIBX11_PATH" "https://gitlab.freedesktop.org/xorg/lib/libx11"
   autoreconf -fi
-  LDFLAGS="-sSINGLE_FILE=1" emconfigure ./configure --prefix="$PREFIX_PATH" --with-keysymdefdir="$PREFIX_PATH/include/X11"
+  LDFLAGS="-sSINGLE_FILE=1" emconfigure ./configure --prefix="$PREFIX_PATH" --disable-shared --with-keysymdefdir="$PREFIX_PATH/include/X11"
 
   cd src/util
   gcc makekeys.c -o makekeys #this needs to be executed on the host
@@ -83,10 +91,80 @@ build_libx11() {
   bash
 }
 
+build_libxshmfence() {
+  clone_repo "$LIBXSHMFENCE_PATH" "https://gitlab.freedesktop.org/xorg/lib/libxshmfence"
+  autoreconf -fi
+  emconfigure ./configure --host=i686-linux --prefix="$PREFIX_PATH" --disable-shared
+  emmake make -j$CORE_COUNT
+  emmake make install
+}
+
+build_pixman() {
+  clone_repo "$PIXMAN_PATH" "https://gitlab.freedesktop.org/pixman/pixman"
+  meson setup build --cross-file "$BUILD_PATH/wasm.cross" --default-library static --prefix "$PREFIX_PATH"
+  cd build
+  meson compile
+  meson install
+}
+
+build_libxkbfile() {
+  clone_repo "$LIBXKBFILE_PATH" "https://gitlab.freedesktop.org/xorg/lib/libxkbfile"
+  autoreconf -fi
+  emconfigure ./configure --host=i686-linux --prefix="$PREFIX_PATH" --disable-shared
+  emmake make -j$CORE_COUNT
+  emmake make install
+}
+
+build_zlib() {
+  clone_repo "$ZLIB_PATH" "https://github.com/madler/zlib"
+  emconfigure ./configure --prefix="$PREFIX_PATH" --static
+  emmake make -j$CORE_COUNT
+  emmake make install
+}
+
+build_freetype() {
+  clone_repo "$FREETYPE_PATH" "https://github.com/freetype/freetype"
+  ./autogen.sh
+  emconfigure ./configure --host=i686-linux --prefix="$PREFIX_PATH" --disable-shared
+  emmake make -j$CORE_COUNT
+  emmake make install
+}
+
+build_libfontenc() {
+  clone_repo "$LIBFONTENC_PATH" "https://gitlab.freedesktop.org/xorg/lib/libfontenc"
+  autoreconf -fi
+  CFLAGS="-I$PREFIX_PATH/include" LDFLAGS="-L$PREFIX_PATH/lib" emconfigure ./configure --host=i686-linux --prefix="$PREFIX_PATH" --disable-shared
+  emmake make -j$CORE_COUNT
+  emmake make install
+}
+
+build_libxfont() {
+  clone_repo "$LIBXFONT_PATH" "https://gitlab.freedesktop.org/xorg/lib/libxfont"
+  autoreconf -fi
+  emconfigure ./configure --host=i686-linux --prefix="$PREFIX_PATH" --disable-shared
+  emmake make -j$CORE_COUNT
+  emmake make install
+}
+
+build_libxcvt() {
+  clone_repo "$LIBXCVT_PATH" "https://gitlab.freedesktop.org/xorg/lib/libxcvt"
+  sed -i 's/shared_library/library/' lib/meson.build
+  meson setup build --cross-file "$BUILD_PATH/wasm.cross" --default-library static --prefix "$PREFIX_PATH"
+  cd build
+  meson compile
+  meson install
+}
+
 #create build dirs
 mkdir -p "$BUILD_PATH"
 mkdir -p "$DEPS_PATH"
 mkdir -p "$PREFIX_PATH"
+
+#setup meson
+cp "$BASE_PATH/wasm.cross" "$BUILD_PATH/wasm.cross"
+cross_file="$(cat "$BUILD_PATH/wasm.cross")"
+cross_file="${cross_file//__PREFIX_DIR_HERE__/$PREFIX_PATH}"
+echo "$cross_file" > "$BUILD_PATH/wasm.cross"
 
 #build all deps
 if [ ! -f "$PREFIX_PATH/include/X11/XF86keysym.h" ]; then
@@ -107,13 +185,37 @@ fi
 if [ ! -f "$PREFIX_PATH/lib/libX11.a" ]; then
   build_libx11
 fi
+if [ ! -f "$PREFIX_PATH/lib/libxshmfence.a" ]; then
+  build_libxshmfence
+fi
+if [ ! -f "$PREFIX_PATH/lib/libpixman-1.a" ]; then
+  build_pixman
+fi
+if [ ! -f "$PREFIX_PATH/lib/libxkbfile.a" ]; then
+  build_libxkbfile
+fi
+if [ ! -f "$PREFIX_PATH/lib/libz.a" ]; then
+  build_zlib
+fi
+if [ ! -f "$PREFIX_PATH/lib/libfreetype.a" ]; then
+  build_freetype
+fi
+if [ ! -f "$PREFIX_PATH/lib/libfontenc.a" ]; then
+  build_libfontenc
+fi
+if [ ! -f "$PREFIX_PATH/lib/libXfont2.a" ]; then
+  build_libxfont
+fi
+if [ ! -f "$PREFIX_PATH/lib/libxcvt.a" ]; then
+  build_libxcvt
+fi
 
-#setup meson
-cd "$BUILD_PATH"
-cp "$BASE_PATH/wasm.cross" ./wasm.cross
-cross_file="$(cat wasm.cross)"
-cross_file="${cross_file//__PREFIX_DIR_HERE__/$PREFIX_PATH}"
-echo "$cross_file" > wasm.cross
-
+#setup xserver build
+cd "$SRC_PATH"
+meson setup "$BUILD_PATH" --cross-file "$BUILD_PATH/wasm.cross" \
+  -Dudev=false \
+  -Dudev_kms=false
+  
 #run the compile!
-meson setup "$SRC_PATH" --cross-file ./wasm.cross
+cd "$BUILD_PATH"
+meson compile
