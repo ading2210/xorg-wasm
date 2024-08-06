@@ -16,6 +16,8 @@ option('xwin', type: 'combo', choices: ['true', 'false', 'auto'], value: 'auto',
        description: 'Enable XWin X server')
 option('xquartz', type: 'combo', choices: ['true', 'false', 'auto'], value: 'auto',
        description: 'Enable Xquartz X server')
+option('xwasm', type: 'boolean', value: false,
+       description: 'Enable the Emscripten-based X server that runs with WASM in a web browser.')
 
 
 option('builder_addr', type: 'string', description: 'Builder address', value: 'xorg@lists.freedesktop.org')

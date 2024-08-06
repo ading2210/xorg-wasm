@@ -93,14 +93,6 @@ build_libx11() {
   bash
 }
 
-build_libxshmfence() {
-  clone_repo "$LIBXSHMFENCE_PATH" "https://gitlab.freedesktop.org/xorg/lib/libxshmfence"
-  autoreconf -fi
-  emconfigure ./configure --host=i686-linux --prefix="$PREFIX_PATH" --disable-shared
-  emmake make -j$CORE_COUNT
-  emmake make install
-}
-
 build_pixman() {
   clone_repo "$PIXMAN_PATH" "https://gitlab.freedesktop.org/pixman/pixman"
   meson setup build --cross-file "$BUILD_PATH/wasm.cross" --default-library static --prefix "$PREFIX_PATH"
@@ -207,9 +199,6 @@ fi
 if [ ! -f "$PREFIX_PATH/lib/libX11.a" ]; then
   build_libx11
 fi
-if [ ! -f "$PREFIX_PATH/lib/libxshmfence.a" ]; then
-  build_libxshmfence
-fi
 if [ ! -f "$PREFIX_PATH/lib/libpixman-1.a" ]; then
   build_pixman
 fi
@@ -250,9 +239,10 @@ meson setup "$BUILD_PATH" --cross-file "$BUILD_PATH/wasm.cross" \
   -Dglx=false \
   -Dglamor=false \
   -Dpciaccess=false \
+  -Dmitshm=false \
   -Dxvfb=false \
   -Dxorg=false \
-  #-Dxephyr=true \
+  -Dxwasm=true 
   
 #run the compile!
 cd "$BUILD_PATH"

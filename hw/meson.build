@@ -1,4 +1,4 @@
-if get_option('xephyr')
+if get_option('xephyr') or get_option('xwasm')
     subdir('kdrive')
 endif
 

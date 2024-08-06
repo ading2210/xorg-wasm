@@ -58,7 +58,6 @@
 
 #include <errno.h>
 #include <X11/X.h>
-#include <termios.h>
 
 #include "os/xserver_poll.h"
 
