@@ -26,6 +26,8 @@ ZLIB_PATH="$DEPS_PATH/zlib"
 LIBFONTENC_PATH="$DEPS_PATH/libfontenc"
 LIBXFONT_PATH="$DEPS_PATH/libxfont"
 LIBXCVT_PATH="$DEPS_PATH/libxcvt"
+LIBSHA1_PATH="$DEPS_PATH/libsha1"
+LIBXCB_RENDERUTIL_PATH="$DEPS_PATH/libxcb-render-util"
 
 #export global build options
 export EM_PKG_CONFIG_PATH="$PREFIX_PATH/share/pkgconfig:$PREFIX_PATH/lib/pkgconfig"
@@ -155,6 +157,26 @@ build_libxcvt() {
   meson install
 }
 
+build_libsha1() {
+  clone_repo "$LIBSHA1_PATH" "https://github.com/dottedmag/libsha1"
+  autoreconf -fi
+  emconfigure ./configure --host=i686-linux --prefix="$PREFIX_PATH" --disable-shared
+  emmake make -j$CORE_COUNT
+  emmake make install
+}
+
+build_libxcb-render-util() {
+  clone_repo "$LIBXCB_RENDERUTIL_PATH" "https://gitlab.freedesktop.org/xorg/lib/libxcb-render-util"
+
+  sed -i 's/git:\/\/anongit.freedesktop.org\/xcb\/util-common-m4.git/https:\/\/gitlab.freedesktop.org\/xorg\/util\/xcb-util-m4/' .gitmodules
+  git submodule update --init
+  
+  autoreconf -fi
+  emconfigure ./configure --host=i686-linux --prefix="$PREFIX_PATH" --disable-shared
+  emmake make -j$CORE_COUNT
+  emmake make install
+}
+
 #create build dirs
 mkdir -p "$BUILD_PATH"
 mkdir -p "$DEPS_PATH"
@@ -209,12 +231,28 @@ fi
 if [ ! -f "$PREFIX_PATH/lib/libxcvt.a" ]; then
   build_libxcvt
 fi
+if [ ! -f "$PREFIX_PATH/lib/libsha1.a" ]; then
+  build_libsha1
+fi
+if [ ! -f "$PREFIX_PATH/lib/libxcb-render-util.a" ]; then
+  build_libxcb-render-util
+fi
+
 
 #setup xserver build
 cd "$SRC_PATH"
 meson setup "$BUILD_PATH" --cross-file "$BUILD_PATH/wasm.cross" \
+  --default-library static \
   -Dudev=false \
-  -Dudev_kms=false
+  -Dudev_kms=false \
+  -Dsha1=libsha1 \
+  -Dxdmcp=false \
+  -Dglx=false \
+  -Dglamor=false \
+  -Dpciaccess=false \
+  -Dxvfb=false \
+  -Dxorg=false \
+  #-Dxephyr=true \
   
 #run the compile!
 cd "$BUILD_PATH"

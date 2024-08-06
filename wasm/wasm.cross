@@ -12,3 +12,6 @@ system = 'wasm'
 cpu_family = 'wasm'
 cpu = 'wasm'
 endian = 'little'
+
+[built-in options]
+c_link_args = ['-static']
