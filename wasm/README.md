@@ -7,7 +7,6 @@ Currently, the X server libraries compile fine, however Xephyr is not enabled. T
 
 ## Build Prerequisites:
 - A Linux PC
-- Emscripten
 - Meson
 - GNU Autotools
 - CMake
@@ -16,9 +15,9 @@ Currently, the X server libraries compile fine, however Xephyr is not enabled. T
 - GCC
 
 ## Building:
-Cd into this directory and run `./build.sh`, then wait a bit.
+Cd into this directory and run `./build.sh`, then wait a bit. This script will download the Emscripten SDK for you.
 
 ## Credit
-Inspired by [https://github.com/pelya/xserver-xsdl](xserver-xsdl).
+Inspired by [xserver-xsdl](https://github.com/pelya/xserver-xsdl).
 
 This port was written by [Allen Ding](https://github.com/ading2210/).

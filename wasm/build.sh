@@ -10,6 +10,7 @@ SRC_PATH="$(realpath ..)"
 DEPS_PATH="$BASE_PATH/deps"
 PREFIX_PATH="$BASE_PATH/prefix"
 BUILD_PATH="$BASE_PATH/build"
+EMSDK_PATH="$BASE_PATH/emsdk"
 
 #dependency paths
 XORGPROTO_PATH="$DEPS_PATH/xorgproto"
@@ -18,7 +19,6 @@ LIBXAU_PATH="$DEPS_PATH/libxau"
 LIBXKB_PATH="$DEPS_PATH/libxkb"
 LIBXTRANS_PATH="$DEPS_PATH/libxtrans"
 LIBX11_PATH="$DEPS_PATH/libx11"
-LIBXSHMFENCE_PATH="$DEPS_PATH/libxshmfence"
 PIXMAN_PATH="$DEPS_PATH/pixman"
 LIBXKBFILE_PATH="$DEPS_PATH/libxkbfile"
 FREETYPE_PATH="$DEPS_PATH/freetype"
@@ -27,7 +27,6 @@ LIBFONTENC_PATH="$DEPS_PATH/libfontenc"
 LIBXFONT_PATH="$DEPS_PATH/libxfont"
 LIBXCVT_PATH="$DEPS_PATH/libxcvt"
 LIBSHA1_PATH="$DEPS_PATH/libsha1"
-LIBXCB_RENDERUTIL_PATH="$DEPS_PATH/libxcb-render-util"
 
 #export global build options
 export EM_PKG_CONFIG_PATH="$PREFIX_PATH/share/pkgconfig:$PREFIX_PATH/lib/pkgconfig"
@@ -90,7 +89,6 @@ build_libx11() {
 
   emmake make -j$CORE_COUNT
   emmake make install
-  bash
 }
 
 build_pixman() {
@@ -118,8 +116,9 @@ build_zlib() {
 
 build_freetype() {
   clone_repo "$FREETYPE_PATH" "https://github.com/freetype/freetype"
-  ./autogen.sh
-  emconfigure ./configure --host=i686-linux --prefix="$PREFIX_PATH" --disable-shared
+  mkdir -p build
+  cd build
+  CFLAGS="-pthread" emcmake cmake .. -DCMAKE_INSTALL_PREFIX:PATH="$PREFIX_PATH"
   emmake make -j$CORE_COUNT
   emmake make install
 }
@@ -151,18 +150,7 @@ build_libxcvt() {
 
 build_libsha1() {
   clone_repo "$LIBSHA1_PATH" "https://github.com/dottedmag/libsha1"
-  autoreconf -fi
-  emconfigure ./configure --host=i686-linux --prefix="$PREFIX_PATH" --disable-shared
-  emmake make -j$CORE_COUNT
-  emmake make install
-}
-
-build_libxcb-render-util() {
-  clone_repo "$LIBXCB_RENDERUTIL_PATH" "https://gitlab.freedesktop.org/xorg/lib/libxcb-render-util"
-
-  sed -i 's/git:\/\/anongit.freedesktop.org\/xcb\/util-common-m4.git/https:\/\/gitlab.freedesktop.org\/xorg\/util\/xcb-util-m4/' .gitmodules
-  git submodule update --init
-  
+  sed -i 's/static num_test/static int num_test/' test.c
   autoreconf -fi
   emconfigure ./configure --host=i686-linux --prefix="$PREFIX_PATH" --disable-shared
   emmake make -j$CORE_COUNT
@@ -173,6 +161,16 @@ build_libxcb-render-util() {
 mkdir -p "$BUILD_PATH"
 mkdir -p "$DEPS_PATH"
 mkdir -p "$PREFIX_PATH"
+
+#download emsdk if needed
+if [ ! -d "$EMSDK_PATH" ]; then
+  git clone https://github.com/emscripten-core/emsdk.git --depth=1 -b main "$EMSDK_PATH"
+  cd "$EMSDK_PATH"
+
+  ./emsdk install latest
+  ./emsdk activate latest
+fi
+source "$EMSDK_PATH/emsdk_env.sh"
 
 #setup meson
 cp "$BASE_PATH/wasm.cross" "$BUILD_PATH/wasm.cross"
@@ -223,10 +221,6 @@ fi
 if [ ! -f "$PREFIX_PATH/lib/libsha1.a" ]; then
   build_libsha1
 fi
-if [ ! -f "$PREFIX_PATH/lib/libxcb-render-util.a" ]; then
-  build_libxcb-render-util
-fi
-
 
 #setup xserver build
 cd "$SRC_PATH"

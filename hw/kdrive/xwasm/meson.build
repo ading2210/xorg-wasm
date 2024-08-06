@@ -1,4 +1,4 @@
-project_dir = meson.source_root()
+project_dir = meson.project_source_root()
 wasm_lib_dir = join_paths(project_dir, 'wasm', 'prefix', 'lib')
 c_compiler = meson.get_compiler('c')
 
