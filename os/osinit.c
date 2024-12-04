@@ -282,8 +282,8 @@ OsInit(void)
 #endif
 
 #ifdef __EMSCRIPTEN__
-        displayfd = socket(AF_INET, SOCK_STREAM, 0);
         _XSERVTransListen("tcp");
+        _XSERVTransNoListen("unix");
 #endif
 
 #ifdef RLIMIT_DATA

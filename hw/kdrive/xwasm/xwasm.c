@@ -1,3 +1,4 @@
+#include "X11/X.h"
 #include "kdrive.h"
 #include <SDL/SDL.h>
 
@@ -8,7 +9,11 @@ typedef struct {
 
 static Bool wasmScreenInit(KdScreenInfo *screen) {
   SDL_Init(SDL_INIT_EVERYTHING);
-  SDL_Window* window = SDL_CreateWindow("X.Org Server", 0, 0, screen->width, screen->height, SDL_WINDOW_SHOWN);
+
+  int width = 640;
+  int height = 480;
+
+  SDL_Window* window = SDL_CreateWindow("X.Org Server", 0, 0, width, height, SDL_WINDOW_SHOWN);
   SDL_Surface* surface = SDL_GetWindowSurface(window);
   WasmDriver* driver = malloc(sizeof (WasmDriver));
 
@@ -16,11 +21,20 @@ static Bool wasmScreenInit(KdScreenInfo *screen) {
   driver->surface = surface;
   surface->locked = TRUE;
 
-  KdShadowFbAlloc(screen, FALSE);
-  screen->fb.depth = 24;
+  screen->driver = driver;
+  screen->rate = 60;
+  screen->width = width;
+  screen->height = height;
+  screen->fb.visuals = (1 << TrueColor);
   screen->fb.frameBuffer = surface->pixels;
   screen->fb.byteStride = surface->pitch;
   screen->fb.pixelStride = surface->w;
+	screen->fb.redMask = surface->format->Rmask;
+	screen->fb.greenMask = surface->format->Gmask;
+	screen->fb.blueMask = surface->format->Bmask;
+  screen->fb.bitsPerPixel = surface->format->BitsPerPixel;
+  screen->fb.depth = surface->format->BitsPerPixel;
+  KdShadowFbAlloc(screen, FALSE);
 
   return TRUE;
 }

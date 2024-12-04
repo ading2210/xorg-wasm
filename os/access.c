@@ -784,10 +784,15 @@ DefineSelf(int fd)
     if (bufptr != buf)
         free(bufptr);
 #else                           /* HAVE_GETIFADDRS */
+#ifdef __EMSCRIPTEN__
+    ErrorF("Warning: getifaddrs disabled\n");
+    return;
+#else
     if (getifaddrs(&ifap) < 0) {
         ErrorF("Warning: getifaddrs returns %s\n", strerror(errno));
         return;
     }
+#endif
     for (ifr = ifap; ifr != NULL; ifr = ifr->ifa_next) {
         if (!ifr->ifa_addr)
             continue;

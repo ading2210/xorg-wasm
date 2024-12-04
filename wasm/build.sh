@@ -251,6 +251,7 @@ if [ "$1" = "setup" ]; then
     -Dxvfb=false \
     -Dxorg=false \
     -Dlisten_tcp=true \
+    -Dipv6=false \
     -Dxwasm=true \
     -Ddebug=true \
     -Doptimization=g
