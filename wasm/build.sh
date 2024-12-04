@@ -10,6 +10,7 @@ SRC_PATH="$(realpath ..)"
 DEPS_PATH="$BASE_PATH/deps"
 PREFIX_PATH="$BASE_PATH/prefix"
 BUILD_PATH="$BASE_PATH/build"
+WEB_PATH="$BASE_PATH/web"
 EMSDK_PATH="$BASE_PATH/emsdk"
 
 #dependency paths
@@ -172,12 +173,6 @@ if [ ! -d "$EMSDK_PATH" ]; then
 fi
 source "$EMSDK_PATH/emsdk_env.sh"
 
-#setup meson
-cp "$BASE_PATH/wasm.cross" "$BUILD_PATH/wasm.cross"
-cross_file="$(cat "$BUILD_PATH/wasm.cross")"
-cross_file="${cross_file//__PREFIX_DIR_HERE__/$PREFIX_PATH}"
-echo "$cross_file" > "$BUILD_PATH/wasm.cross"
-
 #build all deps
 if [ ! -f "$PREFIX_PATH/include/X11/XF86keysym.h" ]; then
   download_x11proto
@@ -224,20 +219,42 @@ fi
 
 #setup xserver build
 cd "$SRC_PATH"
-meson setup "$BUILD_PATH" --cross-file "$BUILD_PATH/wasm.cross" \
-  --default-library static \
-  -Dudev=false \
-  -Dudev_kms=false \
-  -Dsha1=libsha1 \
-  -Dxdmcp=false \
-  -Dglx=false \
-  -Dglamor=false \
-  -Dpciaccess=false \
-  -Dmitshm=false \
-  -Dxvfb=false \
-  -Dxorg=false \
-  -Dxwasm=true 
-  
-#run the compile!
-cd "$BUILD_PATH"
-meson compile
+
+if [ "$1" = "setup" ]; then
+  #setup meson
+  cp "$BASE_PATH/wasm.cross" "$BUILD_PATH/wasm.cross"
+  cross_file="$(cat "$BUILD_PATH/wasm.cross")"
+  cross_file="${cross_file//__PREFIX_DIR_HERE__/$PREFIX_PATH}"
+  echo "$cross_file" > "$BUILD_PATH/wasm.cross"
+
+  #setup clangd config
+  CLANGD_CONFIG="CompileFlags:
+  CompilationDatabase: wasm/build
+  Remove: -sUSE_SDL=2
+  Add: [--sysroot=${BASE_PATH}/emsdk/upstream/emscripten/cache/sysroot]" 
+  echo "$CLANGD_CONFIG" > $SRC_PATH/.clangd
+
+  meson setup "$BUILD_PATH" --cross-file "$BUILD_PATH/wasm.cross" \
+    --default-library static \
+    -Dudev=false \
+    -Dudev_kms=false \
+    -Dsha1=libsha1 \
+    -Dxdmcp=false \
+    -Dglx=false \
+    -Dglamor=false \
+    -Dpciaccess=false \
+    -Dmitshm=false \
+    -Dxvfb=false \
+    -Dxorg=false \
+    -Dxwasm=true 
+
+else
+  #run the compile!
+  cd "$BUILD_PATH"
+  meson compile
+
+  mkdir -p "$WEB_PATH/out"
+  cp "$BUILD_PATH/hw/kdrive/xwasm/xwasm.js" "$WEB_PATH/out"
+  cp "$BUILD_PATH/hw/kdrive/xwasm/xwasm.wasm" "$WEB_PATH/out"
+fi
+

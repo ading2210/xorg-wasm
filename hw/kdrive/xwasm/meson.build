@@ -32,5 +32,7 @@ xwasm_server = executable(
     libxserver_glx,
     libglxvnd
   ],
+  c_args: ['-sUSE_SDL=2'],
+  link_args: ['-sUSE_SDL=2'],
   install: true,
 )
