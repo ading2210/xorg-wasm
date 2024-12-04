@@ -158,6 +158,51 @@ build_libsha1() {
   emmake make install
 }
 
+build_all_deps() {
+  if [ ! -f "$PREFIX_PATH/include/X11/XF86keysym.h" ]; then
+    download_x11proto
+  fi
+  if [ ! -d "$PREFIX_PATH/share/xcb/" ]; then
+    download_xkbproto
+  fi
+  if [ ! -f "$PREFIX_PATH/lib/libXau.a" ]; then
+    build_libxau
+  fi
+  if [ ! -f "$PREFIX_PATH/lib/libxcb-xkb.a" ]; then
+    build_libxkb
+  fi
+  if [ ! -f "$PREFIX_PATH/include/X11/Xtrans/Xtrans.c" ]; then
+    build_libxtrans
+  fi
+  if [ ! -f "$PREFIX_PATH/lib/libX11.a" ]; then
+    build_libx11
+  fi
+  if [ ! -f "$PREFIX_PATH/lib/libpixman-1.a" ]; then
+    build_pixman
+  fi
+  if [ ! -f "$PREFIX_PATH/lib/libxkbfile.a" ]; then
+    build_libxkbfile
+  fi
+  if [ ! -f "$PREFIX_PATH/lib/libz.a" ]; then
+    build_zlib
+  fi
+  if [ ! -f "$PREFIX_PATH/lib/libfreetype.a" ]; then
+    build_freetype
+  fi
+  if [ ! -f "$PREFIX_PATH/lib/libfontenc.a" ]; then
+    build_libfontenc
+  fi
+  if [ ! -f "$PREFIX_PATH/lib/libXfont2.a" ]; then
+    build_libxfont
+  fi
+  if [ ! -f "$PREFIX_PATH/lib/libxcvt.a" ]; then
+    build_libxcvt
+  fi
+  if [ ! -f "$PREFIX_PATH/lib/libsha1.a" ]; then
+    build_libsha1
+  fi
+}
+
 #create build dirs
 mkdir -p "$BUILD_PATH"
 mkdir -p "$DEPS_PATH"
@@ -172,50 +217,6 @@ if [ ! -d "$EMSDK_PATH" ]; then
   ./emsdk activate latest
 fi
 source "$EMSDK_PATH/emsdk_env.sh"
-
-#build all deps
-if [ ! -f "$PREFIX_PATH/include/X11/XF86keysym.h" ]; then
-  download_x11proto
-fi
-if [ ! -d "$PREFIX_PATH/share/xcb/" ]; then
-  download_xkbproto
-fi
-if [ ! -f "$PREFIX_PATH/lib/libXau.a" ]; then
-  build_libxau
-fi
-if [ ! -f "$PREFIX_PATH/lib/libxcb-xkb.a" ]; then
-  build_libxkb
-fi
-if [ ! -f "$PREFIX_PATH/include/X11/Xtrans/Xtrans.c" ]; then
-  build_libxtrans
-fi
-if [ ! -f "$PREFIX_PATH/lib/libX11.a" ]; then
-  build_libx11
-fi
-if [ ! -f "$PREFIX_PATH/lib/libpixman-1.a" ]; then
-  build_pixman
-fi
-if [ ! -f "$PREFIX_PATH/lib/libxkbfile.a" ]; then
-  build_libxkbfile
-fi
-if [ ! -f "$PREFIX_PATH/lib/libz.a" ]; then
-  build_zlib
-fi
-if [ ! -f "$PREFIX_PATH/lib/libfreetype.a" ]; then
-  build_freetype
-fi
-if [ ! -f "$PREFIX_PATH/lib/libfontenc.a" ]; then
-  build_libfontenc
-fi
-if [ ! -f "$PREFIX_PATH/lib/libXfont2.a" ]; then
-  build_libxfont
-fi
-if [ ! -f "$PREFIX_PATH/lib/libxcvt.a" ]; then
-  build_libxcvt
-fi
-if [ ! -f "$PREFIX_PATH/lib/libsha1.a" ]; then
-  build_libsha1
-fi
 
 #setup xserver build
 cd "$SRC_PATH"
@@ -234,6 +235,9 @@ if [ "$1" = "setup" ]; then
   Add: [--sysroot=${BASE_PATH}/emsdk/upstream/emscripten/cache/sysroot, -D__EMSCRIPTEN__]" 
   echo "$CLANGD_CONFIG" > $SRC_PATH/.clangd
 
+  build_all_deps
+
+  mkdir -p "$BUILD_PATH"
   meson setup "$BUILD_PATH" --cross-file "$BUILD_PATH/wasm.cross" \
     --default-library static \
     -Dudev=false \
@@ -246,6 +250,7 @@ if [ "$1" = "setup" ]; then
     -Dmitshm=false \
     -Dxvfb=false \
     -Dxorg=false \
+    -Dlisten_tcp=true \
     -Dxwasm=true \
     -Ddebug=true \
     -Doptimization=g
@@ -259,5 +264,7 @@ else
   mkdir -p "$WEB_PATH/out"
   cp "$BUILD_PATH/hw/kdrive/xwasm/xwasm.js" "$WEB_PATH/out"
   cp "$BUILD_PATH/hw/kdrive/xwasm/xwasm.wasm" "$WEB_PATH/out"
+
+  python3 "$BASE_PATH/patch_js.py" "$BASE_PATH/fragments" "$WEB_PATH/out/xwasm.js"
 fi
 

@@ -79,6 +79,10 @@ SOFTWARE.
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <netinet/in.h>
+#define XSERV_t
+#define TRANS_SERVER
+#define TRANS_REOPEN
+#include <X11/Xtrans/Xtrans.h>
 #endif
 
 #ifndef ADMPATH
@@ -279,13 +283,7 @@ OsInit(void)
 
 #ifdef __EMSCRIPTEN__
         displayfd = socket(AF_INET, SOCK_STREAM, 0);
-        /*
-        struct sockaddr_in server;
-        server.sin_port = htons(6000);
-        server.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-        server.sin_family = AF_INET;
-        setsockopt(displayfd, SOL_SOCKET, SO_REUSEADDR, )
-        */
+        _XSERVTransListen("tcp");
 #endif
 
 #ifdef RLIMIT_DATA
