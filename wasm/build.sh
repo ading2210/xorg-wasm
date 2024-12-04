@@ -231,7 +231,7 @@ if [ "$1" = "setup" ]; then
   CLANGD_CONFIG="CompileFlags:
   CompilationDatabase: wasm/build
   Remove: -sUSE_SDL=2
-  Add: [--sysroot=${BASE_PATH}/emsdk/upstream/emscripten/cache/sysroot]" 
+  Add: [--sysroot=${BASE_PATH}/emsdk/upstream/emscripten/cache/sysroot, -D__EMSCRIPTEN__]" 
   echo "$CLANGD_CONFIG" > $SRC_PATH/.clangd
 
   meson setup "$BUILD_PATH" --cross-file "$BUILD_PATH/wasm.cross" \
@@ -246,13 +246,16 @@ if [ "$1" = "setup" ]; then
     -Dmitshm=false \
     -Dxvfb=false \
     -Dxorg=false \
-    -Dxwasm=true 
+    -Dxwasm=true \
+    -Ddebug=true \
+    -Doptimization=g
 
 else
   #run the compile!
   cd "$BUILD_PATH"
   meson compile
 
+  rm -rf "$WEB_PATH/out"
   mkdir -p "$WEB_PATH/out"
   cp "$BUILD_PATH/hw/kdrive/xwasm/xwasm.js" "$WEB_PATH/out"
   cp "$BUILD_PATH/hw/kdrive/xwasm/xwasm.wasm" "$WEB_PATH/out"

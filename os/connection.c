@@ -262,7 +262,10 @@ CreateWellKnownSockets(void)
             }
             else
                 CloseWellKnownConnections();
+#ifdef __EMSCRIPTEN__
+            break;
         }
+#endif
         if (!found)
             FatalError("Failed to find a socket to listen on");
         snprintf(dynamic_display, sizeof(dynamic_display), "%d", i);

@@ -75,6 +75,12 @@ SOFTWARE.
 #include <sys/resource.h>
 #endif
 
+#ifdef __EMSCRIPTEN__
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <netinet/in.h>
+#endif
+
 #ifndef ADMPATH
 #define ADMPATH "/usr/adm/X%smsgs"
 #endif
@@ -271,6 +277,17 @@ OsInit(void)
             setpgid(0, 0);
 #endif
 
+#ifdef __EMSCRIPTEN__
+        displayfd = socket(AF_INET, SOCK_STREAM, 0);
+        /*
+        struct sockaddr_in server;
+        server.sin_port = htons(6000);
+        server.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+        server.sin_family = AF_INET;
+        setsockopt(displayfd, SOL_SOCKET, SO_REUSEADDR, )
+        */
+#endif
+
 #ifdef RLIMIT_DATA
         if (limitDataSpace >= 0) {
             struct rlimit rlim;
@@ -310,7 +327,9 @@ OsInit(void)
             }
         }
 #endif
+#ifndef __EMSCRIPTEN__
         LockServer();
+#endif
         been_here = TRUE;
     }
     TimerInit();

@@ -33,6 +33,6 @@ xwasm_server = executable(
     libglxvnd
   ],
   c_args: ['-sUSE_SDL=2'],
-  link_args: ['-sUSE_SDL=2'],
+  link_args: ['-sUSE_SDL=2', '-sSYSCALL_DEBUG', '-sSOCKET_DEBUG', '-lwebsocket.js', '-g'],
   install: true,
 )
